@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:meu_treino/core/navigation/main_screen.dart';
 import 'features/workout/presentation/workout_screen.dart';
 
 void main(){
@@ -17,7 +18,7 @@ class MyWorkout extends StatelessWidget{
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: const WorkoutPage(),
+      home: const MainScreen(),
     );
   }
 }
