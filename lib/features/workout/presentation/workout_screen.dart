@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:meu_treino/features/workout/presentation/widgets/workout_calendar.dart';
 
 class WorkoutPage extends StatelessWidget {
   const WorkoutPage({super.key});
@@ -17,7 +18,7 @@ class WorkoutPage extends StatelessWidget {
               const SizedBox(height: 24),
 
               _buildCalendarPlaceholder(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 35),
 
               const Text(
                 'Meus Treinos',
@@ -62,16 +63,7 @@ class WorkoutPage extends StatelessWidget {
   }
 
   Widget _buildCalendarPlaceholder() {
-    return Container(
-      width: double.infinity,
-      height: 100,
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: const Center(child: Text('Espaço do Calendário Semanal/Mensal')),
-    );
+    return const WorkoutCalendar();
   }
 
   Widget _buildWorkoutListPlaceholder() {
