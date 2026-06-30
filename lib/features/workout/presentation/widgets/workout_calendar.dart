@@ -51,7 +51,7 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
         width: double.infinity,
-        height: _isExpanded ? 240 : 120,
+        height: _isExpanded ? 260 : 120,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.grey[100],
