@@ -1,56 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:meu_treino/core/theme/app_colors.dart';
+import 'package:meu_treino/features/workout/data/workout_repository_impl.dart';
+import 'package:meu_treino/features/workout/domain/workout.dart';
 import 'package:meu_treino/features/workout/presentation/widgets/workout_calendar.dart';
 import 'package:meu_treino/features/workout/presentation/workout_create_screen.dart';
+import 'package:meu_treino/features/workout/presentation/exercises_manage_screen.dart';
+
+import 'workout_execute_screen.dart';
 
 class WorkoutPage extends StatefulWidget {
-  const WorkoutPage({super.key});
+  final Function(String)? onGoToHistory; 
+
+  const WorkoutPage({super.key, this.onGoToHistory});
 
   @override
   State<WorkoutPage> createState() => _WorkoutpageState();
 }
 
 class _WorkoutpageState extends State<WorkoutPage> {
-  void _showWorkoutSelection(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Inicial qual treino?',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.fitness_center),
-                  title: const Text('Treino A - Peito e triceps'),
-                  subtitle: const Text('4 exercícios'),
-                  onTap: () => _startWorkout(context, 'Treino A'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.fitness_center),
-                  title: const Text('Treino B - Costas e perna'),
-                  subtitle: const Text('5 exercícios'),
-                  onTap: () => _startWorkout(context, 'Treino B'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _startWorkout(BuildContext context, String workoutName) {
-    Navigator.pop(context);
+  Future<List<Workout>> _loadWorkouts() {
+    return WorkoutRepositoryImpl().getActiveWorkouts();
   }
 
   @override
@@ -66,7 +35,7 @@ class _WorkoutpageState extends State<WorkoutPage> {
               _buildHeader(),
               const SizedBox(height: 24),
 
-              WorkoutCalendar(),
+              WorkoutCalendar(onGoToHistory: widget.onGoToHistory,),
               const SizedBox(height: 35),
 
               const Text(
@@ -75,18 +44,94 @@ class _WorkoutpageState extends State<WorkoutPage> {
               ),
               const SizedBox(height: 12),
 
-              Expanded(child: _buildWorkoutListPlaceholder()),
+              Expanded(
+                child: FutureBuilder<List<Workout>>(
+                  future: _loadWorkouts(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (snapshot.hasError) {
+                      return const Center(
+                        child: Text('Erro ao carregar os treinos.'),
+                      );
+                    }
+
+                    final workouts = snapshot.data ?? [];
+
+                    if (workouts.isEmpty) {
+                      return _buildWorkoutListPlaceholder();
+                    }
+
+                    return ListView.builder(
+                      itemCount: workouts.length,
+                      itemBuilder: (context, index) {
+                        final workout = workouts[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: Colors.grey[200]!),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 4,
+                            ),
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.green[50],
+                              child: const Icon(
+                                Icons.fitness_center,
+                                color: Colors.green,
+                              ),
+                            ),
+                            title: Text(
+                              workout.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${workout.exercises.length} exercícios adicionados',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      WorkoutExecutePage(workout: workout),
+                                ),
+                              ).then((_) {
+                                setState(() {});
+                              });
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
+          onPressed: () async {
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => const WorkoutCreatePage(),
               ),
             );
+            setState(() {});
           },
           child: const Icon(Icons.add),
         ),
@@ -94,14 +139,10 @@ class _WorkoutpageState extends State<WorkoutPage> {
     );
   }
 
-  Widget _buildHeader() {
+ Widget _buildHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'IronProgress',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
         CircleAvatar(
           radius: 20,
           backgroundColor: Colors.grey[300],
@@ -117,7 +158,18 @@ class _WorkoutpageState extends State<WorkoutPage> {
           'IronProgress',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(width: 40),
+        IconButton(
+          icon: const Icon(Icons.fitness_center, color: AppColors.textPrimary),
+          tooltip: 'Catálogo de Exercícios',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ExercisesManageScreen(),
+              ),
+            );
+          },
+        ),
       ],
     );
   }
@@ -126,7 +178,7 @@ class _WorkoutpageState extends State<WorkoutPage> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: const Center(child: Text('Nenhum treino ativo criado ainda.')),

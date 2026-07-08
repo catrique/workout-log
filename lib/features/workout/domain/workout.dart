@@ -27,6 +27,23 @@ class Workout {
       isArchived: isArchived ?? this.isArchived,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'is_archived': isArchived ? 1 : 0, 
+    };
+  }
+
+  factory Workout.fromMap(Map<String, dynamic> map, List<WorkoutExercise> exercises) {
+    return Workout(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      isArchived: (map['is_archived'] as int) == 1,
+      exercises: exercises,
+    );
+  }
 }
 
 @immutable
@@ -42,4 +59,23 @@ class WorkoutExercise {
     required this.setsTarget,
     required this.repsTarget,
   });
+
+  Map<String, dynamic> toMap(String workoutId) {
+    return {
+      'exercise_id': exerciseId,
+      'workout_id': workoutId,
+      'name': name,
+      'sets_target': setsTarget,
+      'reps_target': repsTarget,
+    };
+  }
+
+  factory WorkoutExercise.fromMap(Map<String, dynamic> map) {
+    return WorkoutExercise(
+      exerciseId: map['exercise_id'] as String,
+      name: map['name'] as String,
+      setsTarget: map['sets_target'] as int,
+      repsTarget: map['reps_target'] as int,
+    );
+  }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:meu_treino/core/theme/app_colors.dart';
 import 'package:meu_treino/features/history/presentation/history_screen.dart';
+import 'package:meu_treino/features/progress/presentation/progress_screen.dart';
 import 'package:meu_treino/features/workout/presentation/workout_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -11,28 +13,55 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  final List<Widget> _screens = [];
+  final GlobalKey<HistoryPageState> _historyKey = GlobalKey<HistoryPageState>();
 
-  final List<Widget> _screens = [
-    const WorkoutPage(),
-    const HistoryPage(),
-    const Center(child: Text('Tela de Progesso (Em Breve)')),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _screens.clear();
+    _screens.addAll([
+      WorkoutPage(
+        onGoToHistory: _handleGoToHistory,
+      ),
+      HistoryPage(key: _historyKey),
+      const ProgressPage(),
+    ]);
+  }
+
+  void _handleGoToHistory(String dateIso) {
+    setState(() {
+      _currentIndex = 1;
+    });
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _historyKey.currentState?.filterAndExpandDate(dateIso);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: IndexedStack(index: _currentIndex, children: _screens),
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
+        backgroundColor: AppColors.surface,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
+          
+          if (index == 1) {
+            _historyKey.currentState?.clearSearch();
+          }
         },
 
-        selectedItemColor: Colors.green[800],
-        unselectedItemColor: Colors.grey[600],
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
         items: const [

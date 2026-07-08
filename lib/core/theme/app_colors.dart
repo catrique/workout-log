@@ -13,6 +13,6 @@ class AppColors {
   static const Color textPrimary = Color(0xFFFFFFFF);  
   static const Color textSecondary = Color(0xFFB3B3B3); 
   
-  // Bordas e Divisores
+  // Bordas
   static const Color border = Color(0xFF2C2C2C);
 }

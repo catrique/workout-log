@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:meu_treino/core/theme/app_colors.dart';
+import 'package:meu_treino/features/workout/data/workout_repository_impl.dart';
 
 class WorkoutCalendar extends StatefulWidget {
-  const WorkoutCalendar({super.key});
+  final void Function(String)? onGoToHistory;
+
+  const WorkoutCalendar({super.key, this.onGoToHistory});
 
   @override
   State<WorkoutCalendar> createState() => _WorkoutCalendarState();
@@ -9,20 +14,33 @@ class WorkoutCalendar extends StatefulWidget {
 
 class _WorkoutCalendarState extends State<WorkoutCalendar> {
   bool _isExpanded = false;
+  final _repository = WorkoutRepositoryImpl();
+  List<String> _trainedDates = [];  
+
   final List<String> _months = [
-    'Janeiro',
-    'Fevereiro',
-    'Março',
-    'Abril',
-    'Maio',
-    'Junho',
-    'Julho',
-    'Agosto',
-    'Setembro',
-    'Outubro',
-    'Novembro',
-    'Dezembro',
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTrainedDays();
+  }
+
+  Future<void> _loadTrainedDays() async {
+    try {
+      final dates = await _repository.getTrainedDates();
+      setState(() {
+        _trainedDates = dates;
+      });
+    } catch (_) {}
+  }
+
+  bool _checkIfDayHasWorkout(DateTime date) {
+    final formatted = DateFormat('yyyy-MM-dd').format(date);
+    return _trainedDates.contains(formatted);
+  }
 
   List<DateTime> _getDaysOfCurrentWeek() {
     final now = DateTime.now();
@@ -37,6 +55,13 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
       totalDays,
       (index) => DateTime(now.year, now.month, index + 1),
     );
+  }
+
+  void _handleDayTap(DateTime date) {
+    if (_checkIfDayHasWorkout(date) && widget.onGoToHistory != null) {
+      final dateIso = DateFormat('yyyy-MM-dd').format(date);
+      widget.onGoToHistory!(dateIso);
+    }
   }
 
   @override
@@ -54,9 +79,9 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
         height: _isExpanded ? 260 : 120,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: AppColors.surface, 
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Column(
           children: [
@@ -83,12 +108,12 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
       children: [
         Text(
           '$monthName $year',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.textPrimary),
         ),
         Icon(
           _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
           size: 18,
-          color: Colors.grey[600],
+          color: AppColors.textSecondary,
         ),
       ],
     );
@@ -101,20 +126,22 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: weekDays.map((date) {
-        final isToday =
-            date.year == today.year &&
-            date.month == today.month &&
-            date.day == today.day;
+        final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
+        final hasWorkout = _checkIfDayHasWorkout(date); 
 
         return Expanded(
           child: Center(
             child: SizedBox(
               width: 35,
               height: 35,
-              child: _buildDayCell(
-                dayNumber: date.day,
-                hasWorkout: isToday,
-                isToday: isToday,
+              child: InkWell(
+                onTap: () => _handleDayTap(date),
+                borderRadius: BorderRadius.circular(20),
+                child: _buildDayCell(
+                  dayNumber: date.day,
+                  hasWorkout: hasWorkout,
+                  isToday: isToday,
+                ),
               ),
             ),
           ),
@@ -133,11 +160,10 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
           child: Center(
             child: Text(
               day,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors
-                    .grey[500], 
+                color: AppColors.textSecondary,
               ),
             ),
           ),
@@ -159,17 +185,18 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
         crossAxisSpacing: 6,
         childAspectRatio: 1.7,
       ),
-
       itemBuilder: (context, index) {
         final date = monthDays[index];
-        final isToday =
-            date.year == today.year &&
-            date.month == today.month &&
-            date.day == today.day;
-        return _buildDayCell(
-          dayNumber: index + 1,
-          hasWorkout: isToday,
-          isToday: isToday,
+        final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
+        final hasWorkout = _checkIfDayHasWorkout(date);
+
+        return InkWell(
+          onTap: () => _handleDayTap(date),
+          child: _buildDayCell(
+            dayNumber: index + 1,
+            hasWorkout: hasWorkout,
+            isToday: isToday,
+          ),
         );
       },
     );
@@ -180,26 +207,21 @@ class _WorkoutCalendarState extends State<WorkoutCalendar> {
     required bool hasWorkout,
     required bool isToday,
   }) {
-    final backgroundColor = hasWorkout ? Colors.green[100] : Colors.transparent;
-    final textColor = hasWorkout ? Colors.green[800] : Colors.black87;
+    final backgroundColor = hasWorkout ? Colors.green[900]!.withOpacity(0.4) : Colors.transparent;
+    final textColor = hasWorkout ? Colors.green[200] : AppColors.textPrimary;
 
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
         shape: BoxShape.circle,
-        border: isToday
-            ? Border.all(color: Colors.green[600]!, width: 1.5)
-            : null,
+        border: isToday ? Border.all(color: AppColors.primary, width: 1.5) : null,
       ),
-
       child: Center(
         child: Text(
           '$dayNumber',
           style: TextStyle(
             color: textColor,
-            fontWeight: (hasWorkout || isToday)
-                ? FontWeight.bold
-                : FontWeight.normal,
+            fontWeight: (hasWorkout || isToday) ? FontWeight.bold : FontWeight.normal,
             fontSize: 16,
           ),
         ),
